@@ -1,3 +1,4 @@
+#pragma once
 
 /* Define new error codes here if needed */
 
