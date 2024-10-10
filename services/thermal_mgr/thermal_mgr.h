@@ -3,6 +3,10 @@
 #include "lm75bd.h"
 #include "errors.h"
 
+// Include FreeRTOS headers for TaskHandle_t and QueueHandle_t
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
 
 // Thermal Manager Event Types
 typedef enum {
@@ -44,3 +48,4 @@ void osHandlerLM75BD(void); // New function added
 #ifdef __cplusplus
 }
 #endif
+
