@@ -24,7 +24,13 @@ static uint8_t thermalMgrQueueStorageArea[THERMAL_MGR_QUEUE_LENGTH * THERMAL_MGR
 
 static void thermalMgr(void *pvParameters);
 
+//added global 
+static lm75bd_config_t *config;
+
 void initThermalSystemManager(lm75bd_config_t *config) {
+  //added
+  config=config;
+  //
   memset(&thermalMgrTaskBuffer, 0, sizeof(thermalMgrTaskBuffer));
   memset(thermalMgrTaskStack, 0, sizeof(thermalMgrTaskStack));
   
@@ -115,6 +121,7 @@ void overTemperatureDetected(void) {
 void safeOperatingConditions(void) { 
   printConsole("Returned to safe operating conditions!\n");
 }
+
 
 
 
