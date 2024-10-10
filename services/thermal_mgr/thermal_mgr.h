@@ -3,10 +3,9 @@
 #include "lm75bd.h"
 #include "errors.h"
 
-// Include FreeRTOS headers for TaskHandle_t and QueueHandle_t
 #include <FreeRTOS.h>
-#include <task.h>
-#include <queue.h>
+#include <os_task.h>
+#include <os_queue.h>
 
 // Thermal Manager Event Types
 typedef enum {
