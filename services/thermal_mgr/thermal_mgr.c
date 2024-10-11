@@ -24,13 +24,7 @@ static uint8_t thermalMgrQueueStorageArea[THERMAL_MGR_QUEUE_LENGTH * THERMAL_MGR
 
 static void thermalMgr(void *pvParameters);
 
-//added global 
-static lm75bd_config_t *config;
-
 void initThermalSystemManager(lm75bd_config_t *config) {
-  //added
-  config=config;
-  //
   memset(&thermalMgrTaskBuffer, 0, sizeof(thermalMgrTaskBuffer));
   memset(thermalMgrTaskStack, 0, sizeof(thermalMgrTaskStack));
   
@@ -48,66 +42,73 @@ void initThermalSystemManager(lm75bd_config_t *config) {
 }
 
 error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
-  /* Send an event to the thermal manager queue */
-  // Check if the event pointer is valid
-  if (event == NULL) {
-      return ERR_CODE_INVALID_ARG;  // Return error for invalid argument
-  }
+    // Check if the event pointer is valid
+    if (event == NULL) {
+        return ERR_CODE_INVALID_ARG;  
+    }
 
-  // Attempt to send the event to the thermal manager queue
-  if (xQueueSend(thermalMgrQueueHandle, event, portMAX_DELAY) == pdPASS) {
-      return ERR_CODE_SUCCESS;  // Return success if the event was sent
-  }
+    // Check if the thermal manager queue handle is valid
+    if (thermalMgrQueueHandle == NULL) {
+        return ERR_CODE_INVALID_STATE;  
+    }
 
-  // Return error if sending the event fails
-  return ERR_CODE_QUEUE_FULL;  // Return specific error code for queue full
+    // Attempt to send the event to the thermal manager queue
+    if (xQueueSend(thermalMgrQueueHandle, event, THERMAL_MGR_QUEUE_TIMEOUT) == pdPASS) {
+        return ERR_CODE_SUCCESS;  
+
+    // Return error if sending the event fails
+    return ERR_CODE_QUEUE_FULL;  
+    }
 }
 
 void osHandlerLM75BD(void) {
-  /* Implement this function */
+    // Create a new event
+    thermal_mgr_event_t event;
+    event.type = THERMAL_MGR_EVENT_OS_INTERRUPT; 
 
-  // Variable to store the current temperature
-  float temperature;
+    // Send the event to the thermal manager queue
+    error_code_t errCode = thermalMgrSendEvent(&event); 
 
-  // Read the current temperature from the LM75BD sensor
-  error_code_t result = readTempLM75BD(config->devAddr, &temperature); // Call with pointer
-  
-  // Check for read temperature error
-  if (result != ERR_CODE_SUCCESS) {
-      // Handle the error (e.g., log or ignore)
-      return;  // Exit the handler to avoid further processing
-  }
-
-  // Check temperature against thresholds
-  if (temperature > 80.0f) {
-      // Over-temperature condition detected
-      overTemperatureDetected();
-  } else if (temperature < 75.0f) {
-      // Safe operating conditions restored
-      safeOperatingConditions();
-  }
-  
+    // Log the error if sending the event fails
+    LOG_IF_ERROR_CODE(errCode); 
 }
 
 static void thermalMgr(void *pvParameters) {
-  /* Implement this task */
-  lm75bd_config_t *config = (lm75bd_config_t *)pvParameters;
-  
-  thermal_mgr_event_t event; // Variable to store the received event
+    error_code_t errCode; 
 
-  while (1) {
-      // Wait for the next event from the queue
-      if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdPASS) {
-          // Check if the event type is MEASURE_TEMP_CMD
-          if (event.type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD) {
-              // Measure the temperature using the driver function
-              float temperature = readTempLM75BD(config->devAddr, &temperature); 
-              
-              // Send the measured temperature as telemetry
-              addTemperatureTelemetry(temperature);
-          }
-      }
-  }
+    while (1) {
+        thermal_mgr_event_t event;
+
+        // Wait for the next event from the queue
+        if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdPASS) {
+            // Check if the event type is MEASURE_TEMP_CMD
+            if (event.type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD) {
+                // Variable to store the current temperature
+                float temperature;
+
+                // Read the current temperature from the LM75BD sensor
+                errCode = readTempLM75BD(config->devAddr, &temperature); 
+                LOG_IF_ERROR_CODE(errCode); 
+
+                // Check for read temperature error and handle accordingly
+                if (errCode != ERR_CODE_SUCCESS) {
+                    return;  
+                }
+
+                // Check temperature against thresholds
+                if (temperature > 80.0f) {
+                    // Over-temperature condition detected
+                    overTemperatureDetected();
+                } else if (temperature < 75.0f) {
+                    // Safe operating conditions restored
+                    safeOperatingConditions();
+                }
+
+                // Send the measured temperature as telemetry
+                addTemperatureTelemetry(temperature);
+            }
+        }
+    }
 }
 
 void addTemperatureTelemetry(float tempC) {
