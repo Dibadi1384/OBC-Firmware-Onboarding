@@ -16,8 +16,6 @@ typedef enum {
 
     /* Driver errors */
     ERR_CODE_I2C_TRANSFER_TIMEOUT = 200,
-    ERR_CODE_I2C_WRITE_FAIL = 201,  // Added for I2C write failure
-    ERR_CODE_I2C_READ_FAIL = 202,   // Added for I2C read failure
 
     /* Logging errors */
     ERR_CODE_BUFF_TOO_SMALL = 300,
