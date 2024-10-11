@@ -26,35 +26,29 @@ error_code_t lm75bdInit(lm75bd_config_t *config) {
 }
 
 error_code_t readTempLM75BD(uint8_t devAddr, float *temp) {
-  /* Implement this driver function */
+    error_code_t errCode;  
 
-  
-    uint8_t buf[2];  //buffer to hold the two bytes of temperature data
-    uint8_t pointerRegister = 0x00;  //temperature register address (Table 6 in datasheet)
+    uint8_t buf[2] = {0};   
+    uint8_t pointerRegister = 0x00;  
 
-    //send a pointer to the temprature register
-    if (i2cSendTo(devAddr, &pointerRegister, 1) != ERR_CODE_SUCCESS) {
-        return ERR_CODE_I2C_WRITE_FAIL;
+    // Send a pointer to the temperature register
+    LOG_IF_ERROR_CODE(i2cSendTo(devAddr, &pointerRegister, 1));
+
+    // Read from the temperature register
+    LOG_IF_ERROR_CODE(i2cReceiveFrom(devAddr, buf, 2));
+
+    // Extract 11-bit data from the 2 bytes received
+    int16_t tempRaw = (buf[0] << 3) | (buf[1] >> 5);
+
+    // Calculate two's complement for negative temperatures
+    if (tempRaw & (1 << 10)) {
+        tempRaw |= 0xF800;
     }
 
-    //reads from temprature register
-    if (i2cReceiveFrom(devAddr, buf, 2) != ERR_CODE_SUCCESS) {
-        return ERR_CODE_I2C_READ_FAIL;
-    }
+    // Convert raw temperature to Celsius
+    *temp = tempRaw * 0.125f;
 
-    //extracts 11 bit data from the 2 bytes recieved 
-    int16_t tempRaw = (buf[0] << 3) | (buf[1] >> 5);  
-
-    //calculates twos complement for negative tempratures 
-    if (tempRaw & (1 << 10)) {  
-        tempRaw |= 0xF800;  
-    }
-
-    // Convert raw temp to celcius 
-    *temp = tempRaw * 0.125;
-
-  
-  return ERR_CODE_SUCCESS;
+    return ERR_CODE_SUCCESS;
 }
 
 #define CONF_WRITE_BUFF_SIZE 2U
