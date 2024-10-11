@@ -101,7 +101,7 @@ static void thermalMgr(void *pvParameters) {
                   continue;
                 }
 
-                sHandlerLM75BD();
+                osHandlerLM75BD();
 
                 // Check temperature against thresholds
                 if (temperature > OVER_TEMPERATURE_THRESHOLD) {
