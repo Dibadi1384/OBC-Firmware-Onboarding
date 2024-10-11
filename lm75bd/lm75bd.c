@@ -28,14 +28,19 @@ error_code_t lm75bdInit(lm75bd_config_t *config) {
 error_code_t readTempLM75BD(uint8_t devAddr, float *temp) {
     error_code_t errCode;  
 
+    // Check if temp pointer is null
+    if (temp == NULL) {
+        return ERR_CODE_INVALID_ARG; 
+    }
+
     uint8_t buf[2] = {0};   
     uint8_t pointerRegister = 0x00;  
 
     // Send a pointer to the temperature register
-    LOG_IF_ERROR_CODE(i2cSendTo(devAddr, &pointerRegister, 1));
+    RETURN_IF_ERROR_CODE(i2cSendTo(devAddr, &pointerRegister, sizeof()));
 
     // Read from the temperature register
-    LOG_IF_ERROR_CODE(i2cReceiveFrom(devAddr, buf, 2));
+    RETURN_IF_ERROR_CODE(i2cReceiveFrom(devAddr, buf, sizeof()));
 
     // Extract 11-bit data from the 2 bytes received
     int16_t tempRaw = (buf[0] << 3) | (buf[1] >> 5);
