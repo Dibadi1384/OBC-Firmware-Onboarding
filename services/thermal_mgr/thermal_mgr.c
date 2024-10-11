@@ -18,7 +18,12 @@ static StackType_t thermalMgrTaskStack[THERMAL_MGR_STACK_SIZE];
 
 #define THERMAL_MGR_QUEUE_LENGTH 10U
 #define THERMAL_MGR_QUEUE_ITEM_SIZE sizeof(thermal_mgr_event_t)
-#define THERMAL_MGR_QUEUE_TIMEOUT (pdMS_TO_TICKS(100))  // 100 ms timeout
+
+///Added
+#define THERMAL_MGR_QUEUE_TIMEOUT (pdMS_TO_TICKS(0))  // 100 ms timeout
+#define OVER_TEMPERATURE_THRESHOLD 80.0f
+#define SAFE_TEMPERATURE_THRESHOLD 75.0f
+///
 
 static QueueHandle_t thermalMgrQueueHandle;
 static StaticQueue_t thermalMgrQueueBuffer;
@@ -57,10 +62,10 @@ error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
     // Attempt to send the event to the thermal manager queue
     if (xQueueSend(thermalMgrQueueHandle, event, THERMAL_MGR_QUEUE_TIMEOUT) == pdPASS) {
         return ERR_CODE_SUCCESS;  
+    }
 
     // Return error if sending the event fails
-    return ERR_CODE_QUEUE_FULL;  
-    }
+    return ERR_CODE_QUEUE_FULL;     
 }
 
 void osHandlerLM75BD(void) {
@@ -83,7 +88,6 @@ static void thermalMgr(void *pvParameters) {
 
         // Wait for the next event from the queue
         if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdPASS) {
-            // Check if the event type is MEASURE_TEMP_CMD
             if (event.type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD) {
                 // Variable to store the current temperature
                 float temperature;
@@ -93,20 +97,27 @@ static void thermalMgr(void *pvParameters) {
                 LOG_IF_ERROR_CODE(errCode); 
 
                 // Check for read temperature error and handle accordingly
-                RETURN_IF_ERROR_CODE(errCode);
+                if (errCode != ERR_CODE_SUCCESS) {
+                  continue;
+                }
+
+                sHandlerLM75BD();
 
                 // Check temperature against thresholds
-                if (temperature > 80.0f) {
+                if (temperature > OVER_TEMPERATURE_THRESHOLD) {
                     // Over-temperature condition detected
                     overTemperatureDetected();
-                } else if (temperature < 75.0f) {
+                } else if (temperature < SAFE_TEMPERATURE_THRESHOLD) {
                     // Safe operating conditions restored
                     safeOperatingConditions();
                 }
-
+                
                 // Send the measured temperature as telemetry
-                addTemperatureTelemetry(temperature);
+                addTemperatureTelemetry(temperature);           
             }
+
+          // Log invalid or unknown event
+          LOG_ERROR_CODE(ERR_CODE_INVALID_STATE);
         }
     }
 }
@@ -122,6 +133,8 @@ void overTemperatureDetected(void) {
 void safeOperatingConditions(void) { 
   printConsole("Returned to safe operating conditions!\n");
 }
+
+
 
 
 
