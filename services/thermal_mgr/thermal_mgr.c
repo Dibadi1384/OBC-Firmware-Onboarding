@@ -17,6 +17,7 @@ static StackType_t thermalMgrTaskStack[THERMAL_MGR_STACK_SIZE];
 
 #define THERMAL_MGR_QUEUE_LENGTH 10U
 #define THERMAL_MGR_QUEUE_ITEM_SIZE sizeof(thermal_mgr_event_t)
+#define THERMAL_MGR_QUEUE_TIMEOUT (pdMS_TO_TICKS(100))  // 100 ms timeout
 
 static QueueHandle_t thermalMgrQueueHandle;
 static StaticQueue_t thermalMgrQueueBuffer;
@@ -62,15 +63,14 @@ error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
 }
 
 void osHandlerLM75BD(void) {
+    error_code_t errCode; 
+
     // Create a new event
     thermal_mgr_event_t event;
     event.type = THERMAL_MGR_EVENT_OS_INTERRUPT; 
 
-    // Send the event to the thermal manager queue
-    error_code_t errCode = thermalMgrSendEvent(&event); 
-
     // Log the error if sending the event fails
-    LOG_IF_ERROR_CODE(errCode); 
+    LOG_IF_ERROR_CODE(thermalMgrSendEvent(&event)); 
 }
 
 static void thermalMgr(void *pvParameters) {
@@ -87,13 +87,11 @@ static void thermalMgr(void *pvParameters) {
                 float temperature;
 
                 // Read the current temperature from the LM75BD sensor
-                errCode = readTempLM75BD(config->devAddr, &temperature); 
+                errCode = readTempLM75BD(configMAX->devAddr, &temperature); 
                 LOG_IF_ERROR_CODE(errCode); 
 
                 // Check for read temperature error and handle accordingly
-                if (errCode != ERR_CODE_SUCCESS) {
-                    return;  
-                }
+                RETURN_IF_ERROR_CODE(errCode);
 
                 // Check temperature against thresholds
                 if (temperature > 80.0f) {
