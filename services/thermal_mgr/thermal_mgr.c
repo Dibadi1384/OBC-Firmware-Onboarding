@@ -2,6 +2,7 @@
 #include "errors.h"
 #include "lm75bd.h"
 #include "console.h"
+#include "logging.h"
 
 #include <FreeRTOS.h>
 #include <os_task.h>
@@ -75,6 +76,7 @@ void osHandlerLM75BD(void) {
 
 static void thermalMgr(void *pvParameters) {
     error_code_t errCode; 
+    lm75bd_config_t *config = (lm75bd_config_t *)pvParameters;
 
     while (1) {
         thermal_mgr_event_t event;
@@ -87,7 +89,7 @@ static void thermalMgr(void *pvParameters) {
                 float temperature;
 
                 // Read the current temperature from the LM75BD sensor
-                errCode = readTempLM75BD(configMAX->devAddr, &temperature); 
+                errCode = readTempLM75BD(config->devAddr, &temperature); 
                 LOG_IF_ERROR_CODE(errCode); 
 
                 // Check for read temperature error and handle accordingly
@@ -120,6 +122,7 @@ void overTemperatureDetected(void) {
 void safeOperatingConditions(void) { 
   printConsole("Returned to safe operating conditions!\n");
 }
+
 
 
 
