@@ -109,12 +109,18 @@ static void thermalMgr(void *pvParameters) {
             if (temperature > LM75BD_DEFAULT_OT_THRESH) {
                 // Over-temperature condition detected
                 overTemperatureDetected();
+                addTemperatureTelemetry(temperature);              
+
             } else if (temperature < LM75BD_DEFAULT_HYST_THRESH) {
                 // Safe operating conditions restored
+                
                 safeOperatingConditions();
-            }            
+                addTemperatureTelemetry(temperature);           
+
+
+            }        
         }
-        
+
         else{
           LOG_ERROR_CODE(ERR_CODE_INVALID_EVENT);
         }    
@@ -133,6 +139,8 @@ void overTemperatureDetected(void) {
 void safeOperatingConditions(void) { 
   printConsole("Returned to safe operating conditions!\n");
 }
+
+
 
 
 
