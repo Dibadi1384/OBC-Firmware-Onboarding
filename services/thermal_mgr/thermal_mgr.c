@@ -67,6 +67,8 @@ error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
 }
 
 void osHandlerLM75BD(void) {
+    error_code_t errCode; 
+
     // Create a new event
     thermal_mgr_event_t event;
     event.type = THERMAL_MGR_EVENT_OS_INTERRUPT; 
