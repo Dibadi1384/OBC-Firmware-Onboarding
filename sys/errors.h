@@ -13,6 +13,8 @@ typedef enum {
     ERR_CODE_MUTEX_TIMEOUT = 100,
     ERR_CODE_QUEUE_FULL = 101,
     ERR_CODE_INVALID_QUEUE_MSG = 102,
+    ERR_CODE_INVALID_EVENT = 103,  // Added error code
+
 
     /* Driver errors */
     ERR_CODE_I2C_TRANSFER_TIMEOUT = 200,
