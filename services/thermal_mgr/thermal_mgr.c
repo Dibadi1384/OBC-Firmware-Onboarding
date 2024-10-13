@@ -86,34 +86,23 @@ static void thermalMgr(void *pvParameters) {
     while (1) {
       // Wait for the next event from the queue
       if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdPASS) {
+        // Read the current temperature from the LM75BD sensor
+        errCode = readTempLM75BD(config->devAddr, &temperature); 
+        LOG_IF_ERROR_CODE(errCode); 
+
+        // Check for read temperature error, skip if temp not read
+        if (errCode != ERR_CODE_SUCCESS) {
+          continue;
+        }
 
         //Measure Temp Event
         if (event.type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD) {
-          // Read the current temperature from the LM75BD sensor
-          errCode = readTempLM75BD(config->devAddr, &temperature); 
-          LOG_IF_ERROR_CODE(errCode); 
-
-          // Check for read temperature error, skip if temp not read
-          if (errCode != ERR_CODE_SUCCESS) {
-            continue;
-          }
-
           // Send the measured temperature as telemetry
           addTemperatureTelemetry(temperature);           
         }
 
         //OS Interrupt Event
         else if(event.type == THERMAL_MGR_EVENT_OS_INTERRUPT){
-          // Read the current temperature from the LM75BD sensor
-          errCode = readTempLM75BD(config->devAddr, &temperature); 
-          LOG_IF_ERROR_CODE(errCode); 
-
-          // Check for read temperature error, skip if temp not read
-          if (errCode != ERR_CODE_SUCCESS) {
-            continue;
-          }
-
-          addTemperatureTelemetry(temperature);              
           // Check temperature against thresholds
           if (temperature > LM75BD_DEFAULT_OT_THRESH) {
               // Over-temperature condition detected
@@ -122,7 +111,8 @@ static void thermalMgr(void *pvParameters) {
           } else if (temperature < LM75BD_DEFAULT_HYST_THRESH) {
               // Safe operating conditions restored  
               safeOperatingConditions();
-          }        
+          } 
+          addTemperatureTelemetry(temperature);                    
         }
 
         else{
@@ -143,6 +133,8 @@ void overTemperatureDetected(void) {
 void safeOperatingConditions(void) { 
   printConsole("Returned to safe operating conditions!\n");
 }
+
+
 
 
 
