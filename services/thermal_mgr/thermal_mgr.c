@@ -104,20 +104,17 @@ static void thermalMgr(void *pvParameters) {
 
         //OS Interrupt Event
         else if(event.type == THERMAL_MGR_EVENT_OS_INTERRUPT){
-            osHandlerLM75BD();
+            addTemperatureTelemetry(temperature);              
             // Check temperature against thresholds
             if (temperature > LM75BD_DEFAULT_OT_THRESH) {
                 // Over-temperature condition detected
+                osHandlerLM75BD();
                 overTemperatureDetected();
-                addTemperatureTelemetry(temperature);              
 
             } else if (temperature < LM75BD_DEFAULT_HYST_THRESH) {
-                // Safe operating conditions restored
-                
+                // Safe operating conditions restored  
+                osHandlerLM75BD();
                 safeOperatingConditions();
-                addTemperatureTelemetry(temperature);           
-
-
             }        
         }
 
@@ -139,6 +136,8 @@ void overTemperatureDetected(void) {
 void safeOperatingConditions(void) { 
   printConsole("Returned to safe operating conditions!\n");
 }
+
+
 
 
 
