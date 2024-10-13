@@ -132,7 +132,7 @@ void overTemperatureDetected(void) {
 
 void safeOperatingConditions(void) { 
   printConsole("Returned to safe operating conditions!\n");
-
+}
 
 
 
