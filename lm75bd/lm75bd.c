@@ -42,7 +42,6 @@ error_code_t readTempLM75BD(uint8_t devAddr, float *temp) {
     // Read from the temperature register
     RETURN_IF_ERROR_CODE(i2cReceiveFrom(devAddr, buf, sizeof(buf)));
   
-    // Extract 11-bit data from the 2 bytes received
     int16_t tempRaw = ((buf[0]<<8|buf[1])>>5); 
 
     // Calculate two's complement for negative temperatures
