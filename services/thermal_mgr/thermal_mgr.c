@@ -109,10 +109,7 @@ static void thermalMgr(void *pvParameters) {
         // Check for read temperature error, skip if temp not read
         if (errCode != ERR_CODE_SUCCESS) {
           continue;
-        }
-
-        // Send the measured temperature as telemetry
-        addTemperatureTelemetry(temperature);                    
+        }                    
 
         // Check temperature against thresholds
         if (temperature > LM75BD_DEFAULT_OT_THRESH) {
@@ -123,6 +120,9 @@ static void thermalMgr(void *pvParameters) {
             // Safe operating conditions restored  
             safeOperatingConditions();
         } 
+
+        // Send the measured temperature as telemetry
+        addTemperatureTelemetry(temperature);
       }
 
       else{
