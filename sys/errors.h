@@ -8,12 +8,13 @@ typedef enum {
     ERR_CODE_UNKNOWN = 1,
     ERR_CODE_INVALID_ARG = 2,
     ERR_CODE_INVALID_STATE = 3,
+    ERR_CODE_INVALID_EVENT = 4,  // Added error code
+
 
     /* FreeRTOS errors */
     ERR_CODE_MUTEX_TIMEOUT = 100,
     ERR_CODE_QUEUE_FULL = 101,
     ERR_CODE_INVALID_QUEUE_MSG = 102,
-    ERR_CODE_INVALID_EVENT = 103,  // Added error code
 
 
     /* Driver errors */
