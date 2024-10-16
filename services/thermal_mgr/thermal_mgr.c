@@ -20,8 +20,7 @@ static StackType_t thermalMgrTaskStack[THERMAL_MGR_STACK_SIZE];
 #define THERMAL_MGR_QUEUE_ITEM_SIZE sizeof(thermal_mgr_event_t)
 
 ///Added
-#define THERMAL_MGR_QUEUE_TIMEOUT (pdMS_TO_TICKS(0))  // 100 ms timeout
-///
+#define THERMAL_MGR_QUEUE_TIMEOUT (pdMS_TO_TICKS(0))  // 0 ms timeout
 
 static QueueHandle_t thermalMgrQueueHandle;
 static StaticQueue_t thermalMgrQueueBuffer;
@@ -78,14 +77,16 @@ void osHandlerLM75BD(void) {
 }
 
 static void thermalMgr(void *pvParameters) {
-    error_code_t errCode; 
-    lm75bd_config_t *config = (lm75bd_config_t *)pvParameters;
-    thermal_mgr_event_t event;
-    float temperature;
+  error_code_t errCode; 
+  lm75bd_config_t *config = (lm75bd_config_t *)pvParameters;
+  thermal_mgr_event_t event;
+  float temperature;
 
-    while (1) {
-      // Wait for the next event from the queue
-      if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdPASS) {
+  while (1) {
+    // Wait for the next event from the queue
+    if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdPASS) {
+      //Measure Temp Event
+      if (event.type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD) {
         // Read the current temperature from the LM75BD sensor
         errCode = readTempLM75BD(config->devAddr, &temperature); 
         LOG_IF_ERROR_CODE(errCode); 
@@ -95,31 +96,40 @@ static void thermalMgr(void *pvParameters) {
           continue;
         }
 
-        //Measure Temp Event
-        if (event.type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD) {
-          // Send the measured temperature as telemetry
-          addTemperatureTelemetry(temperature);           
-        }
-
-        //OS Interrupt Event
-        else if(event.type == THERMAL_MGR_EVENT_OS_INTERRUPT){
-          // Check temperature against thresholds
-          if (temperature > LM75BD_DEFAULT_OT_THRESH) {
-              // Over-temperature condition detected
-              overTemperatureDetected();
-
-          } else if (temperature < LM75BD_DEFAULT_HYST_THRESH) {
-              // Safe operating conditions restored  
-              safeOperatingConditions();
-          } 
-          addTemperatureTelemetry(temperature);                    
-        }
-
-        else{
-          LOG_ERROR_CODE(ERR_CODE_INVALID_EVENT);
-        }    
+        // Send the measured temperature as telemetry
+        addTemperatureTelemetry(temperature);           
       }
+
+      //OS Interrupt Event
+      else if(event.type == THERMAL_MGR_EVENT_OS_INTERRUPT){
+        // Read the current temperature from the LM75BD sensor
+        errCode = readTempLM75BD(config->devAddr, &temperature); 
+        LOG_IF_ERROR_CODE(errCode); 
+
+        // Check for read temperature error, skip if temp not read
+        if (errCode != ERR_CODE_SUCCESS) {
+          continue;
+        }
+
+        // Send the measured temperature as telemetry
+        addTemperatureTelemetry(temperature);                    
+
+        // Check temperature against thresholds
+        if (temperature > LM75BD_DEFAULT_OT_THRESH) {
+            // Over-temperature condition detected
+            overTemperatureDetected();
+
+        } else if (temperature < LM75BD_DEFAULT_HYST_THRESH) {
+            // Safe operating conditions restored  
+            safeOperatingConditions();
+        } 
+      }
+
+      else{
+        LOG_ERROR_CODE(ERR_CODE_INVALID_EVENT);
+      }    
     }
+  }
 }
 
 void addTemperatureTelemetry(float tempC) {
